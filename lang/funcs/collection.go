@@ -119,7 +119,7 @@ var LengthFunc = function.New(&function.Spec{
 	},
 })
 
-// CoalesceFunc contructs a function that takes any number of arguments and
+// CoalesceFunc constructs a function that takes any number of arguments and
 // returns the first one that isn't empty. This function was copied from go-cty
 // stdlib and modified so that it returns the first *non-empty* non-null element
 // from a sequence, instead of merely the first non-null.
@@ -163,7 +163,7 @@ var CoalesceFunc = function.New(&function.Spec{
 	},
 })
 
-// CoalesceListFunc contructs a function that takes any number of list arguments
+// CoalesceListFunc constructs a function that takes any number of list arguments
 // and returns the first one that isn't empty.
 var CoalesceListFunc = function.New(&function.Spec{
 	Params: []function.Parameter{},
@@ -221,7 +221,7 @@ var CoalesceListFunc = function.New(&function.Spec{
 	},
 })
 
-// CompactFunc contructs a function that takes a list of strings and returns a new list
+// CompactFunc constructs a function that takes a list of strings and returns a new list
 // with any empty string elements removed.
 var CompactFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -257,10 +257,8 @@ var CompactFunc = function.New(&function.Spec{
 	},
 })
 
-// ContainsFunc contructs a function that determines whether a given list
-// contains a given single value as one of its elements.
-//
-// ContainsFunc also works on sets, as HCL automatically converts sets to lists.
+// ContainsFunc constructs a function that determines whether a given list or
+// set contains a given single value as one of its elements.
 var ContainsFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -284,7 +282,7 @@ var ContainsFunc = function.New(&function.Spec{
 	},
 })
 
-// IndexFunc contructs a function that finds the element index for a given value in a list.
+// IndexFunc constructs a function that finds the element index for a given value in a list.
 var IndexFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -328,7 +326,7 @@ var IndexFunc = function.New(&function.Spec{
 	},
 })
 
-// DistinctFunc contructs a function that takes a list and returns a new list
+// DistinctFunc constructs a function that takes a list and returns a new list
 // with any duplicate elements removed.
 var DistinctFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -360,7 +358,7 @@ var DistinctFunc = function.New(&function.Spec{
 	},
 })
 
-// ChunklistFunc contructs a function that splits a single list into fixed-size chunks,
+// ChunklistFunc constructs a function that splits a single list into fixed-size chunks,
 // returning a list of lists.
 var ChunklistFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -421,7 +419,7 @@ var ChunklistFunc = function.New(&function.Spec{
 	},
 })
 
-// FlattenFunc contructs a function that takes a list and replaces any elements
+// FlattenFunc constructs a function that takes a list and replaces any elements
 // that are lists with a flattened sequence of the list contents.
 var FlattenFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -461,7 +459,7 @@ func flattener(finalList []cty.Value, flattenList cty.Value) []cty.Value {
 	return finalList
 }
 
-// KeysFunc contructs a function that takes a map and returns a sorted list of the map keys.
+// KeysFunc constructs a function that takes a map and returns a sorted list of the map keys.
 var KeysFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -531,7 +529,7 @@ var KeysFunc = function.New(&function.Spec{
 	},
 })
 
-// ListFunc contructs a function that takes an arbitrary number of arguments
+// ListFunc constructs a function that takes an arbitrary number of arguments
 // and returns a list containing those values in the same order.
 //
 // This function is deprecated in Terraform v0.12
@@ -575,7 +573,7 @@ var ListFunc = function.New(&function.Spec{
 	},
 })
 
-// LookupFunc contructs a function that performs dynamic lookups of map types.
+// LookupFunc constructs a function that performs dynamic lookups of map types.
 var LookupFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -669,7 +667,7 @@ var LookupFunc = function.New(&function.Spec{
 	},
 })
 
-// MapFunc contructs a function that takes an even number of arguments and
+// MapFunc constructs a function that takes an even number of arguments and
 // returns a map whose elements are constructed from consecutive pairs of arguments.
 //
 // This function is deprecated in Terraform v0.12
@@ -742,7 +740,7 @@ var MapFunc = function.New(&function.Spec{
 	},
 })
 
-// MatchkeysFunc contructs a function that constructs a new list by taking a
+// MatchkeysFunc constructs a function that constructs a new list by taking a
 // subset of elements from one list whose indexes match the corresponding
 // indexes of values in another list.
 var MatchkeysFunc = function.New(&function.Spec{
@@ -820,7 +818,7 @@ var MatchkeysFunc = function.New(&function.Spec{
 	},
 })
 
-// MergeFunc contructs a function that takes an arbitrary number of maps and
+// MergeFunc constructs a function that takes an arbitrary number of maps and
 // returns a single map that contains a merged set of elements from all of the maps.
 //
 // If more than one given map defines the same key then the one that is later in
@@ -1019,7 +1017,7 @@ var SetProductFunc = function.New(&function.Spec{
 	},
 })
 
-// SliceFunc contructs a function that extracts some consecutive elements
+// SliceFunc constructs a function that extracts some consecutive elements
 // from within a list.
 var SliceFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -1081,7 +1079,7 @@ var SliceFunc = function.New(&function.Spec{
 	},
 })
 
-// TransposeFunc contructs a function that takes a map of lists of strings and
+// TransposeFunc constructs a function that takes a map of lists of strings and
 // swaps the keys and values to produce a new map of lists of strings.
 var TransposeFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -1131,7 +1129,7 @@ var TransposeFunc = function.New(&function.Spec{
 	},
 })
 
-// ValuesFunc contructs a function that returns a list of the map values,
+// ValuesFunc constructs a function that returns a list of the map values,
 // in the order of the sorted keys.
 var ValuesFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
@@ -1188,7 +1186,7 @@ var ValuesFunc = function.New(&function.Spec{
 	},
 })
 
-// ZipmapFunc contructs a function that constructs a map from a list of keys
+// ZipmapFunc constructs a function that constructs a map from a list of keys
 // and a corresponding list of values.
 var ZipmapFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
