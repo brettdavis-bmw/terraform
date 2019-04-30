@@ -1040,7 +1040,7 @@ var SliceFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
 			Name: "list",
-			Type: cty.List(cty.DynamicPseudoType),
+			Type: cty.DynamicPseudoType,
 		},
 		{
 			Name: "startIndex",
@@ -1052,49 +1052,79 @@ var SliceFunc = function.New(&function.Spec{
 		},
 	},
 	Type: func(args []cty.Value) (cty.Type, error) {
-		return args[0].Type(), nil
+		arg := args[0]
+		argTy := arg.Type()
+
+		if !args[0].IsKnown() {
+			return argTy, nil
+		}
+
+		if !argTy.IsListType() && !argTy.IsTupleType() {
+			return cty.NilType, fmt.Errorf("can only flatten lists, and tuples")
+		}
+
+		if argTy.IsListType() {
+			return argTy, nil
+		}
+
+		startIndex, endIndex, err := sliceIndexes(args, args[0].LengthInt())
+		if err != nil {
+			return cty.NilType, err
+		}
+
+		var tys []cty.Type
+		for _, ty := range arg.AsValueSlice() {
+			tys = append(tys, ty.Type())
+		}
+
+		return cty.Tuple(tys[startIndex:endIndex]), nil
 	},
 	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 		inputList := args[0]
-		if !inputList.IsWhollyKnown() {
-			return cty.UnknownVal(retType), nil
-		}
-		var startIndex, endIndex int
 
-		if err = gocty.FromCtyValue(args[1], &startIndex); err != nil {
-			return cty.NilVal, fmt.Errorf("invalid start index: %s", err)
-		}
-		if err = gocty.FromCtyValue(args[2], &endIndex); err != nil {
-			return cty.NilVal, fmt.Errorf("invalid start index: %s", err)
+		startIndex, endIndex, err := sliceIndexes(args, inputList.LengthInt())
+		if err != nil {
+			return cty.NilVal, err
 		}
 
-		if startIndex < 0 {
-			return cty.NilVal, fmt.Errorf("from index must be >= 0")
-		}
-		if endIndex > inputList.LengthInt() {
-			return cty.NilVal, fmt.Errorf("to index must be <= length of the input list")
-		}
-		if startIndex > endIndex {
-			return cty.NilVal, fmt.Errorf("from index must be <= to index")
-		}
-
-		var outputList []cty.Value
-
-		i := 0
-		for it := inputList.ElementIterator(); it.Next(); {
-			_, v := it.Element()
-			if i >= startIndex && i < endIndex {
-				outputList = append(outputList, v)
+		if endIndex-startIndex == 0 {
+			if retType.IsTupleType() {
+				return cty.EmptyTupleVal, nil
 			}
-			i++
-		}
-
-		if len(outputList) == 0 {
 			return cty.ListValEmpty(retType.ElementType()), nil
 		}
+
+		outputList := inputList.AsValueSlice()[startIndex:endIndex]
+
+		if retType.IsTupleType() {
+			return cty.TupleVal(outputList), nil
+		}
+
 		return cty.ListVal(outputList), nil
 	},
 })
+
+func sliceIndexes(args []cty.Value, max int) (int, int, error) {
+	var startIndex, endIndex int
+
+	if err := gocty.FromCtyValue(args[1], &startIndex); err != nil {
+		return 0, 0, fmt.Errorf("invalid start index: %s", err)
+	}
+	if err := gocty.FromCtyValue(args[2], &endIndex); err != nil {
+		return 0, 0, fmt.Errorf("invalid start index: %s", err)
+	}
+
+	if startIndex < 0 {
+		return 0, 0, fmt.Errorf("from index must be >= 0")
+	}
+	if endIndex > max {
+		return 0, 0, fmt.Errorf("to index must be <= length of the input list")
+	}
+	if startIndex > endIndex {
+		return 0, 0, fmt.Errorf("from index must be <= to index")
+	}
+	return startIndex, endIndex, nil
+}
 
 // TransposeFunc contructs a function that takes a map of lists of strings and
 // swaps the keys and values to produce a new map of lists of strings.
