@@ -12,6 +12,18 @@ import (
 )
 
 func TestAssertObjectCompatible(t *testing.T) {
+	schemaWithFoo := configschema.Block{
+		Attributes: map[string]*configschema.Attribute{
+			"foo": {Type: cty.String, Optional: true},
+		},
+	}
+	fooBlockValue := cty.ObjectVal(map[string]cty.Value{
+		"foo": cty.StringVal("bar"),
+	})
+	fooBlockDynamicPlaceholder := cty.ObjectVal(map[string]cty.Value{
+		"foo": cty.UnknownVal(cty.String),
+	})
+
 	tests := []struct {
 		Schema   *configschema.Block
 		Planned  cty.Value
@@ -681,11 +693,9 @@ func TestAssertObjectCompatible(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"id":  cty.UnknownVal(cty.String),
 				"key": cty.EmptyObjectVal,
 			}),
 			cty.ObjectVal(map[string]cty.Value{
-				"id":  cty.UnknownVal(cty.String),
 				"key": cty.EmptyObjectVal,
 			}),
 			nil,
@@ -700,11 +710,9 @@ func TestAssertObjectCompatible(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"id":  cty.UnknownVal(cty.String),
 				"key": cty.UnknownVal(cty.EmptyObject),
 			}),
 			cty.ObjectVal(map[string]cty.Value{
-				"id":  cty.UnknownVal(cty.String),
 				"key": cty.EmptyObjectVal,
 			}),
 			nil,
@@ -806,20 +814,18 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"key": {
 						Nesting: configschema.NestingList,
-						Block:   configschema.Block{},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
 				"key": cty.ListVal([]cty.Value{
-					cty.EmptyObjectVal,
+					fooBlockValue,
 				}),
 			}),
 			cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
 				"key": cty.ListVal([]cty.Value{
-					cty.EmptyObjectVal,
+					fooBlockValue,
 				}),
 			}),
 			nil,
@@ -829,21 +835,19 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"key": {
 						Nesting: configschema.NestingList,
-						Block:   configschema.Block{},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
 				"key": cty.TupleVal([]cty.Value{
-					cty.EmptyObjectVal,
-					cty.EmptyObjectVal,
+					fooBlockValue,
+					fooBlockValue,
 				}),
 			}),
 			cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
 				"key": cty.TupleVal([]cty.Value{
-					cty.EmptyObjectVal,
+					fooBlockValue,
 				}),
 			}),
 			[]string{
@@ -855,24 +859,76 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"key": {
 						Nesting: configschema.NestingList,
-						Block:   configschema.Block{},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"id":  cty.UnknownVal(cty.String),
 				"key": cty.TupleVal([]cty.Value{}),
 			}),
 			cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
 				"key": cty.TupleVal([]cty.Value{
-					cty.EmptyObjectVal,
-					cty.EmptyObjectVal,
+					fooBlockValue,
+					fooBlockValue,
 				}),
 			}),
 			[]string{
 				`.key: block count changed from 0 to 2`,
 			},
+		},
+		{
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"key": {
+						Nesting: configschema.NestingList,
+						Block:   schemaWithFoo,
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"key": cty.ListVal([]cty.Value{
+					fooBlockDynamicPlaceholder, // the presence of this disables some of our checks
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"key": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"foo": cty.StringVal("hello"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"foo": cty.StringVal("world"),
+					}),
+				}),
+			}),
+			nil, // a single block whose attrs are all unknown is allowed to expand into multiple, because that's how dynamic blocks behave when for_each is unknown
+		},
+		{
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"key": {
+						Nesting: configschema.NestingList,
+						Block:   schemaWithFoo,
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"key": cty.ListVal([]cty.Value{
+					fooBlockValue,              // the presence of one static block does not negate that the following element looks like a dynamic placeholder
+					fooBlockDynamicPlaceholder, // the presence of this disables some of our checks
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"key": cty.ListVal([]cty.Value{
+					fooBlockValue,
+					cty.ObjectVal(map[string]cty.Value{
+						"foo": cty.StringVal("hello"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"foo": cty.StringVal("world"),
+					}),
+				}),
+			}),
+			nil, // as above, the presence of a block whose attrs are all unknown indicates dynamic block expansion, so our usual count checks don't apply
 		},
 
 		// NestingSet blocks
@@ -881,14 +937,7 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"block": {
 						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"foo": {
-									Type:     cty.String,
-									Optional: true,
-								},
-							},
-						},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
@@ -919,14 +968,7 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"block": {
 						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"foo": {
-									Type:     cty.String,
-									Optional: true,
-								},
-							},
-						},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
@@ -957,14 +999,7 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"block": {
 						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"foo": {
-									Type:     cty.String,
-									Optional: true,
-								},
-							},
-						},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
@@ -995,14 +1030,7 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"block": {
 						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"foo": {
-									Type:     cty.String,
-									Optional: true,
-								},
-							},
-						},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
@@ -1038,14 +1066,7 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"block": {
 						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"foo": {
-									Type:     cty.String,
-									Optional: true,
-								},
-							},
-						},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
@@ -1082,14 +1103,7 @@ func TestAssertObjectCompatible(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"block": {
 						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"foo": {
-									Type:     cty.String,
-									Optional: true,
-								},
-							},
-						},
+						Block:   schemaWithFoo,
 					},
 				},
 			},
@@ -1112,8 +1126,8 @@ func TestAssertObjectCompatible(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("%#v and %#v", test.Planned, test.Actual), func(t *testing.T) {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%02d: %#v and %#v", i, test.Planned, test.Actual), func(t *testing.T) {
 			errs := AssertObjectCompatible(test.Schema, test.Planned, test.Actual)
 
 			wantErrs := make(map[string]struct{})
